@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
+    <style>
+      html, body, .map {
+        /*margin: 0;*/
+        /*padding: 0;*/
+        width: 70%;
+        height: 80%;
+      }
+      #info {
+        position: absolute;
+        font-size: 0.7em;
+        top: 10px;
+        right: 10px;
+        background-color: lightgrey;
+        padding: 4px;
+      }
+      .button {
+      position: absolute;
+      bottom: 40px;
+      left: 10px;
+      }
+    </style>
+
+    <script src="https://openlayers.org/en/v4.6.4/build/ol.js" type="text/javascript"></script>
+    <title>Dublin Bike Stands</title>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info" style="display:none;"></div>
+    <!-- <label for="track"> -->
+      <!-- track position -->
+      <!-- <input id="track" type="checkbox"/> -->
+    <!-- </label> -->
+    <p> 
+      position : <code id="position"></code>&nbsp;&nbsp;
+      position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;
+      altitude : <code id="altitude"></code>&nbsp;&nbsp;
+      altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;
+      heading : <code id="heading"></code>&nbsp;&nbsp;
+      speed : <code id="speed"></code>
+    </p>
+<!--     <img id="geolocation_marker" src="http://openlayers.org/en/latest/examples/data/geolocation_marker.png" /> -->
+<!--     <div class="button">
+        <button id="geolocate">Geolocate Me!</button>
+    </div>   -->
+    <script type="text/javascript">
+
+    // var el = document.getElementById("geolocate");
+
+    // if (el.addEventListener)
+    //   el.addEventListener("click", doFunction, false);
+    // else if (el.attachEvent)
+    //   el.attachEvent("onclick", doFunction);
+
+// MAKE THE MAP 
+    var view = new ol.View({
+          center: ol.proj.fromLonLat([-6.27, 53.35]),
+          zoom: 12
+        });
+
+    var map = new ol.Map({
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        view: view
+      });
+
+////////////////////////////////////////////
+
+// SORT OUT THE GEOLOCATION
+
+    var geolocation = new ol.Geolocation({
+      projection: view.getProjection(),
+      tracking: true
+    });
+
+    function el(id) {
+      return document.getElementById(id);
+    }
+
+    // console.log(geolocation.getProperties());
+    // el('track').addEventListener('change', function() {
+    //   geolocation.setTracking(this.checked);
+    // });
+
+    geolocation.on('change', function() {
+        el('position').innerText = geolocation.getPosition();
+        el('accuracy').innerText = geolocation.getAccuracy() + ' [m]';
+        el('altitude').innerText = geolocation.getAltitude() + ' [m]';
+        el('altitudeAccuracy').innerText = geolocation.getAltitudeAccuracy() + ' [m]';
+        el('heading').innerText = geolocation.getHeading() + ' [rad]';
+        el('speed').innerText = geolocation.getSpeed() + ' [m/s]';
+        }); 
+
+    // geolocation.on('change', function(evt) {
+    //   {alert(geolocation.getPosition());};
+    //   console.log(geolocation.getPosition());
+    //   });
+
+
+    // handle geolocation error.
+    geolocation.on('error', function(error) {
+        var info = document.getElementById('info');
+        info.innerHTML = error.message;
+        info.style.display = '';
+      });
+
+    var accuracyFeature = new ol.Feature();
+      geolocation.on('change:accuracyGeometry', function() {
+        accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
+      });
+
+      var positionFeature = new ol.Feature();
+      positionFeature.setStyle(new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 6,
+          fill: new ol.style.Fill({
+            color: '#3399CC'
+          }),
+          stroke: new ol.style.Stroke({
+            color: '#fff',
+            width: 2
+          })
+        })
+      }));
+
+      geolocation.on('change:position', function() {
+        var coordinates = geolocation.getPosition();
+        positionFeature.setGeometry(coordinates ?
+          new ol.geom.Point(coordinates) : null);
+      });
+
+      new ol.layer.Vector({
+        map: map,
+        source: new ol.source.Vector({
+          features: [accuracyFeature, positionFeature]
+        })
+      });
+
+    </script>
+  </body>
+</html>
+
